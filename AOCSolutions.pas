@@ -62,6 +62,24 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay7 = class(TAdventOfCode)
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay8 = class(TAdventOfCode)
+  private
+    DisPlay: TDictionary<TPoint,Boolean>;
+    const ScreenWidth: integer = 50;
+          screenHeight: integer = 6;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+
   {
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
@@ -462,8 +480,223 @@ begin
   Recs.Free;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay7'}
+function TAdventOfCodeDay7.SolveA: Variant;
 
+  function Abba(Const aString: String): Boolean;
+  Var i: Integer;
+  begin
+    Result := False;
+    for i := 0 to Length(aString) - 1 do
+      if (aString[i] = aString[i+3]) and (aString[i+1] = aString[i+2]) and (aString[i] <> aString[i+2]) then
+        Exit(True);
+  end;
 
+Var Split: TStringDynArray;
+    s, Tls, HyperNet: string;
+    i: Integer;
+begin
+  Result := 0;
+
+  for s in FInput do
+  begin
+    i := 1;
+    Split := SplitString(s, '[]');
+    Tls := Split[0];
+    HyperNet := '';
+    while i < Length(Split) do
+    begin
+      HyperNet := HyperNet + '@@@@' + Split[i];
+      Tls := Tls + '@@@@' + Split[i+1];
+      Inc(i, 2);
+    end;
+
+    if Abba(Tls) and Not Abba(HyperNet) then
+      Inc(Result, 1);
+  end;
+end;
+
+function TAdventOfCodeDay7.SolveB: Variant;
+Var Split: TStringDynArray;
+    s, s2, Tls, HyperNet: string;
+    i: Integer;
+begin
+  Result := 0;
+  for s in FInput do
+  begin
+    i := 1;
+    Split := SplitString(s, '[]');
+    Tls := Split[0];
+    HyperNet := '';
+    while i < Length(Split) do
+    begin
+      HyperNet := HyperNet + '@@@@' + Split[i];
+      Tls := Tls + '@@@@' + Split[i+1];
+      Inc(i, 2);
+    end;
+
+    for i := 1 to Length(HyperNet) - 1 do
+    begin
+      s2 := HyperNet[i] + HyperNet[i+1] + HyperNet[i+2];
+      if (HyperNet[i] = HyperNet[i+2]) and (HyperNet[i] <> HyperNet[i+1]) then
+      begin
+        s2 := HyperNet[i+1] + HyperNet[i] + HyperNet[i+1];
+        if Pos(s2, Tls) > 0 then
+        begin
+          Inc(Result);
+          Break;
+        end;
+      end;
+    end;
+  end;
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay8'}
+type TFillNewValues = procedure(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer) of object;
+procedure TAdventOfCodeDay8.BeforeSolve;
+
+  procedure DoRect(aX, aY: Integer);
+  Var x, y: Integer;
+      Point: TPoint;
+  begin
+    for x := 0 to ax-1 do
+      for y := 0 to ay-1 do
+      begin
+        Point := TPoint.Create(x,y);
+        DisPlay[Point] := True;
+      end;
+  end;
+
+  procedure DoRotateColumn(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+  var y: Integer;
+  begin
+    for y := 0 to screenHeight -1 do
+      NewValues.Add(TPoint.Create(ax, (y+aY)Mod (screenHeight)), DisPlay[TPoint.Create(aX, y)]);
+  end;
+
+  procedure DoRotateRow(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+  var x: Integer;
+  begin
+    for x := 0 to ScreenWidth -1 do
+      NewValues.Add(TPoint.Create((x+ax) Mod (ScreenWidth), aY), DisPlay[TPoint.Create(x, aY)]);
+  end;
+
+  procedure Rotate(aFillNewValues: TFillNewValues; aX, aY: Integer);
+  Var NewValues: TDictionary<TPoint,Boolean>;
+      Point: TPoint;
+  begin
+    NewValues := TDictionary<TPoint,Boolean>.Create;
+    aFillNewValues(NewValues, aX, aY);
+    for Point in NewValues.Keys do
+      DisPlay[Point] := NewValues[Point];
+    NewValues.Free;;
+  end;
+
+  procedure RotateColumn(aX, aY: Integer);
+  Var NewValues: TDictionary<TPoint,Boolean>;
+      Point: TPoint;
+      y: Integer;
+  begin
+    NewValues := TDictionary<TPoint,Boolean>.Create;
+    for y := 0 to screenHeight -1 do
+    begin
+      Point := TPoint.Create(ax, (y+aY)Mod (screenHeight));
+      NewValues.Add(Point, DisPlay[TPoint.Create(aX, y)]);
+    end;
+
+    for Point in NewValues.Keys do
+      DisPlay[Point] := NewValues[Point];
+    NewValues.Free;;
+  end;
+
+  procedure RotateRow(aX, aY: Integer);
+  Var NewValues: TDictionary<TPoint,Boolean>;
+      Point: TPoint;
+      x: Integer;
+  begin
+    NewValues := TDictionary<TPoint,Boolean>.Create;
+    for x := 0 to ScreenWidth -1 do
+      NewValues.Add(TPoint.Create((x+ax) Mod (ScreenWidth), aY), DisPlay[TPoint.Create(x, aY)]);
+
+    for Point in NewValues.Keys do
+      DisPlay[Point] := NewValues[Point];
+    NewValues.Free;
+  end;
+
+var x,y: Integer;
+    Point: TPoint;
+    s: string;
+    Split: TStringDynArray;
+begin
+  DisPlay := TDictionary<TPoint,Boolean>.Create;
+  for x := 0 to ScreenWidth -1 do
+    for y := 0 to screenHeight-1 do
+    begin
+      Point := TPoint.Create(x ,y);
+      DisPlay.Add(Point, False);
+    end;
+
+  for s in FInput do
+  begin
+    if s.StartsWith('rect') then
+    begin
+      Split := SplitString(s, 'x ');
+      DoRect(Split[1].ToInteger, Split[2].ToInteger);
+    end
+    else if s.StartsWith('rotate column') then
+    begin
+      Split := SplitString(s, ' =');
+      Rotate(DoRotateColumn, Split[3].ToInteger, Split[5].ToInteger);
+    end
+    else if s.StartsWith('rotate row') then
+    begin
+      Split := SplitString(s, ' =');
+      Rotate(DoRotateRow, Split[5].ToInteger, Split[3].ToInteger);
+    end
+    else
+      Assert(False, s);
+  end;
+end;
+
+procedure TAdventOfCodeDay8.AfterSolve;
+begin
+  DisPlay.Free;
+end;
+
+function TAdventOfCodeDay8.SolveA: Variant;
+var b: boolean;
+begin
+  Result := 0;
+  for b in DisPlay.Values do
+    if b then
+      Inc(Result);
+end;
+
+function TAdventOfCodeDay8.SolveB: Variant;
+var x,y: integer;
+    s: String;
+    sl: TStringList;
+begin
+  WriteLn('');
+  sl := TStringList.Create;
+  for y := 0 to ScreenHeight -1 do
+  begin
+    s := '';
+    for x := 0 to ScreenWidth -1 do
+    begin
+      if Display[TPoint.Create(x,y)] then
+        s := s + '#'
+      else
+        s := s + ' ';
+    end;
+    sl.Add(s);
+  end;
+
+  Result := 'Solution saved at ' + SaveFilePath;
+  sl.SaveToFile(SaveFilePath);
+  sl.Free;
+end;
+{$ENDREGION}
 (*
 {$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -489,8 +722,8 @@ end;
 *)
 
 initialization
-  RegisterClasses([TAdventOfCodeDay1, TAdventOfCodeDay2, TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-                   TAdventOfCodeDay6]);
+  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
+                   TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8]);
 
 end.
 
