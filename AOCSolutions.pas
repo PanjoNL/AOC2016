@@ -71,6 +71,10 @@ type
   TAdventOfCodeDay8 = class(TAdventOfCode)
   private
     DisPlay: TDictionary<TPoint,Boolean>;
+
+    procedure DoRotateRow(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+    procedure DoRotateColumn(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+
     const ScreenWidth: integer = 50;
           screenHeight: integer = 6;
   protected
@@ -552,7 +556,22 @@ begin
 end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay8'}
-type TFillNewValues = procedure(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer) of object;
+type TFillNewValues =  procedure(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer) of object;
+
+procedure TAdventOfCodeDay8.DoRotateColumn(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+var y: Integer;
+begin
+  for y := 0 to screenHeight -1 do
+    NewValues.Add(TPoint.Create(ax, (y+aY)Mod (screenHeight)), DisPlay[TPoint.Create(aX, y)]);
+end;
+
+procedure TAdventOfCodeDay8.DoRotateRow(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
+var x: Integer;
+begin
+  for x := 0 to ScreenWidth -1 do
+    NewValues.Add(TPoint.Create((x+ax) Mod (ScreenWidth), aY), DisPlay[TPoint.Create(x, aY)]);
+end;
+
 procedure TAdventOfCodeDay8.BeforeSolve;
 
   procedure DoRect(aX, aY: Integer);
@@ -567,20 +586,6 @@ procedure TAdventOfCodeDay8.BeforeSolve;
       end;
   end;
 
-  procedure DoRotateColumn(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
-  var y: Integer;
-  begin
-    for y := 0 to screenHeight -1 do
-      NewValues.Add(TPoint.Create(ax, (y+aY)Mod (screenHeight)), DisPlay[TPoint.Create(aX, y)]);
-  end;
-
-  procedure DoRotateRow(NewValues: TDictionary<TPoint,Boolean>; aX, aY: Integer);
-  var x: Integer;
-  begin
-    for x := 0 to ScreenWidth -1 do
-      NewValues.Add(TPoint.Create((x+ax) Mod (ScreenWidth), aY), DisPlay[TPoint.Create(x, aY)]);
-  end;
-
   procedure Rotate(aFillNewValues: TFillNewValues; aX, aY: Integer);
   Var NewValues: TDictionary<TPoint,Boolean>;
       Point: TPoint;
@@ -590,37 +595,6 @@ procedure TAdventOfCodeDay8.BeforeSolve;
     for Point in NewValues.Keys do
       DisPlay[Point] := NewValues[Point];
     NewValues.Free;;
-  end;
-
-  procedure RotateColumn(aX, aY: Integer);
-  Var NewValues: TDictionary<TPoint,Boolean>;
-      Point: TPoint;
-      y: Integer;
-  begin
-    NewValues := TDictionary<TPoint,Boolean>.Create;
-    for y := 0 to screenHeight -1 do
-    begin
-      Point := TPoint.Create(ax, (y+aY)Mod (screenHeight));
-      NewValues.Add(Point, DisPlay[TPoint.Create(aX, y)]);
-    end;
-
-    for Point in NewValues.Keys do
-      DisPlay[Point] := NewValues[Point];
-    NewValues.Free;;
-  end;
-
-  procedure RotateRow(aX, aY: Integer);
-  Var NewValues: TDictionary<TPoint,Boolean>;
-      Point: TPoint;
-      x: Integer;
-  begin
-    NewValues := TDictionary<TPoint,Boolean>.Create;
-    for x := 0 to ScreenWidth -1 do
-      NewValues.Add(TPoint.Create((x+ax) Mod (ScreenWidth), aY), DisPlay[TPoint.Create(x, aY)]);
-
-    for Point in NewValues.Keys do
-      DisPlay[Point] := NewValues[Point];
-    NewValues.Free;
   end;
 
 var x,y: Integer;
