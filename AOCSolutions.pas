@@ -84,6 +84,14 @@ type
     procedure AfterSolve; override;
   end;
 
+  TAdventOfCodeDay9 = class(TAdventOfCode)
+  private
+    function Decompress(Const aLine: String; Const aRecursive: Boolean): Int64;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   {
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
@@ -671,6 +679,51 @@ begin
   sl.Free;
 end;
 {$ENDREGION}
+
+{$Region 'TAdventOfCodeDay9'}
+function TAdventOfCodeDay9.Decompress(Const aLine: String; Const aRecursive: Boolean): Int64;
+Var s, Marker, SubString: String;
+    i, j, MarkerEnd: integer;
+    split: TStringDynArray;
+begin
+  Result := 0;
+  i := 1;
+
+  while i <= Length(aLine) do
+  begin
+    if aLine[i] <> '(' then
+      Inc(Result)
+    else
+    begin
+      MarkerEnd := Pos(')', aLine, i);
+      Marker := Copy(aLine, i+1, MarkerEnd-i-1);
+      split := SplitString(Marker, 'x');
+      SubString := Copy(aLine, MarkerEnd+1, Split[0].ToInteger);
+
+      if aRecursive and (Pos('(', SubString) > 0) then
+        Result := Result + split[1].ToInteger * Decompress(SubString, aRecursive)
+      else
+        Result := Result + split[1].ToInteger * Split[0].ToInteger;
+
+      i := MarkerEnd + Split[0].ToInteger;
+    end;
+
+    Inc(i);
+  end;
+end;
+
+function TAdventOfCodeDay9.SolveA: Variant;
+begin
+  Result := Decompress(FInput[0], False);
+end;
+
+function TAdventOfCodeDay9.SolveB: Variant;
+begin
+  Result := Decompress(FInput[0], True);
+end;
+{$ENDREGION}
+
+
 (*
 {$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -697,7 +750,7 @@ end;
 
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
-                   TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8]);
+                   TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9]);
 
 end.
 
