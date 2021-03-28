@@ -16,7 +16,7 @@ public
   Class procedure RunTests;
 end;
 
-Const AOCTestData: array[0..7] of AOCTest =
+Const AOCTestData: array[0..8] of AOCTest =
 (
  (AOCClass: TAdventOfCodeDay1; ExpectedSolutionA: '230'; ExpectedSolutionB: '154'),
  (AOCClass: TAdventOfCodeDay2; ExpectedSolutionA: '38961'; ExpectedSolutionB: '46C92'),
@@ -26,7 +26,8 @@ Const AOCTestData: array[0..7] of AOCTest =
  (AOCClass: TAdventOfCodeDay6; ExpectedSolutionA: 'afwlyyyq'; ExpectedSolutionB: 'bhkzekao'),
  (AOCClass: TAdventOfCodeDay7; ExpectedSolutionA: '115'; ExpectedSolutionB: '231'),
  (AOCClass: TAdventOfCodeDay8; ExpectedSolutionA: '123'; ExpectedSolutionB: ''),
- (AOCClass: TAdventOfCodeDay9; ExpectedSolutionA: '138735'; ExpectedSolutionB: '11125026826')
+ (AOCClass: TAdventOfCodeDay9; ExpectedSolutionA: '138735'; ExpectedSolutionB: '11125026826'),
+ (AOCClass: TAdventOfCodeDay10; ExpectedSolutionA: '113'; ExpectedSolutionB: '12803')
 );
 
 implementation
@@ -36,7 +37,7 @@ class procedure AOCTests.RunTests;
   procedure _Check(const DisplayName, Expected, Actual: String);
   begin
     if Expected <> '' then
-      if Expected <> Actual then
+      if not SameText(Expected, Actual) then
       begin
         WriteLn(Format('FAIL, %s Expected: %s, Actual: %s', [DisplayName, Expected, Actual]));
         Assert(False);

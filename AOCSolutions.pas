@@ -92,6 +92,33 @@ type
     function SolveB: Variant; override;
   end;
 
+  TRobot = Class
+  private
+    FId, FChip1, FChip2: Integer;
+  public
+    OutputLow, OutputHigh: Integer;
+    OutputLowIsRobot, OutputHighIsRobot: boolean;
+
+    constructor Create(Const aId: Integer);
+
+    procedure AddChip(Const aChip: Integer);
+    procedure RemoveChips;
+    function LowChip: Integer;
+    function HighChip: Integer;
+    function HasTwoChips: Boolean;
+
+    property Id: Integer Read FId;
+  end;
+
+  TAdventOfCodeDay10 = class(TAdventOfCode)
+  private
+    procedure FreeRobot(Sender: TObject; Const aValue: TRobot; Action: TCollectionNotification);
+    function PrepareRobots: TDictionary<Integer, TRobot>;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   {
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
@@ -679,11 +706,10 @@ begin
   sl.Free;
 end;
 {$ENDREGION}
-
 {$Region 'TAdventOfCodeDay9'}
 function TAdventOfCodeDay9.Decompress(Const aLine: String; Const aRecursive: Boolean): Int64;
-Var s, Marker, SubString: String;
-    i, j, MarkerEnd: integer;
+Var Marker, SubString: String;
+    i, MarkerEnd: integer;
     split: TStringDynArray;
 begin
   Result := 0;
@@ -722,6 +748,166 @@ begin
   Result := Decompress(FInput[0], True);
 end;
 {$ENDREGION}
+{$Region 'TRobot'}
+constructor TRobot.Create(Const aId: Integer);
+begin
+  FChip1 := 0;
+  FChip2 := 0;
+  OutputLow := 0;
+  OutPutHigh := 0;
+  FId := aId;
+end;
+
+procedure TRobot.AddChip(Const aChip: Integer);
+begin
+  if FChip1 = 0 then
+    FChip1 := aChip
+  else if FChip2 = 0 then
+    FChip2 := aChip
+  else
+    Assert(False);
+end;
+
+procedure TRobot.RemoveChips;
+begin
+  FChip1 := 0;
+  FChip2 := 0;
+end;
+
+function TRobot.LowChip: Integer;
+begin
+  Result := Min(FChip1, FChip2);
+end;
+
+function TRobot.HighChip: Integer;
+begin
+  Result := Max(FChip1, FChip2);
+end;
+
+function TRobot.HasTwoChips: Boolean;
+begin
+  Result := FChip2 <> 0;
+end;
+
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay10'}
+procedure TAdventOfCodeDay10.FreeRobot(Sender: TObject; Const aValue: TRobot; Action: TCollectionNotification);
+begin
+  if Action = cnRemoved then
+    aValue.Free;
+end;
+
+function TAdventOfCodeDay10.PrepareRobots: TDictionary<Integer, TRobot>;
+
+  function _GetRobot(Const Robots: TDictionary<Integer, TRobot>; Const aId: Integer): TRobot;
+  begin
+    if not Robots.TryGetValue(aId, Result) then
+    begin
+      Result := TRobot.Create(aId);
+      Robots.Add(Result.Id, Result);
+    end;
+  end;
+
+
+var s: String;
+    Split: TStringDynArray;
+    Robot: TRobot;
+begin
+  Result := TDictionary<Integer, TRobot>.Create();
+  Result.OnValueNotify := FreeRobot;
+
+  for s in FInput do
+  begin
+    Split := SplitString(s, ' ');
+    if SameText(Split[0], 'Value') then
+    begin
+      Robot := _GetRobot(Result, Split[5].ToInteger);
+      Robot.AddChip(Split[1].ToInteger);
+    end
+    else if SameText(Split[0], 'bot') then // bot 0 gives low to output 2 and high to bot 0
+    begin
+      Robot := _GetRobot(Result, Split[1].ToInteger);
+
+      Robot.OutputLow := Split[6].ToInteger;
+      Robot.OutputLowIsRobot := SameText(Split[5], 'bot');
+      Robot.OutPutHigh := Split[11].ToInteger;
+      Robot.OutputHighIsRobot := SameText(Split[10], 'bot');
+    end
+    else
+      Assert(False, s);
+  end;
+end;
+
+function TAdventOfCodeDay10.SolveA: Variant;
+var Robot: TRobot;
+    Robots: TDictionary<Integer, TRobot>;
+begin
+  Robots := PrepareRobots;
+
+  try
+    while true do
+    begin
+      for Robot in Robots.Values do
+      begin
+        if not Robot.HasTwoChips then
+          Continue;
+
+        if (Robot.LowChip = 17) and (Robot.HighChip = 61) then
+          Exit(Robot.Id);
+
+        if Robot.OutputLowIsRobot then
+          Robots[Robot.OutputLow].AddChip(Robot.LowChip);
+
+        if Robot.OutputHighIsRobot then
+          Robots[Robot.OutPutHigh].AddChip(Robot.HighChip);
+
+        Robot.RemoveChips;
+      end;
+    end;
+  finally
+    Robots.Free;
+  end;
+end;
+
+function TAdventOfCodeDay10.SolveB: Variant;
+var Robot: TRobot;
+    Robots: TDictionary<Integer, TRobot>;
+    OutPutList: TList<Integer>;
+    i: Integer;
+begin
+  Robots := PrepareRobots;
+  OutPutList := TList<Integer>.Create;
+
+  while OutPutList.Count < 3 do
+  begin
+    for Robot in Robots.Values do
+    begin
+      if not Robot.HasTwoChips then
+        Continue;
+
+      if Robot.OutputLowIsRobot then
+        Robots[Robot.OutputLow].AddChip(Robot.LowChip)
+      else if Robot.OutputLow <= 2 then
+        OutPutList.Add(Robot.LowChip);
+
+      if Robot.OutputHighIsRobot then
+        Robots[Robot.OutPutHigh].AddChip(Robot.HighChip)
+      else if Robot.OutputHigh <= 2 then
+        OutPutList.Add(Robot.HighChip);
+
+      Robot.RemoveChips;
+    end;
+  end;
+
+  Result := 1;
+  for i in OutPutList do
+    Result := Result * i;
+
+  OutPutList.Free;
+  Robots.Free;
+end;
+{$ENDREGION}
+
 
 
 (*
@@ -750,7 +936,7 @@ end;
 
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
-                   TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9]);
+                   TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10]);
 
 end.
 
